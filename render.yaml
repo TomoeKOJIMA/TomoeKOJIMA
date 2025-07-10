@@ -1,7 +1,7 @@
 services:
   - type: web
-    name: TomoeKOJIMA
+    name: dengon-dial
     env: node
     plan: free
-    buildCommand: "npm install && apt-get update && apt-get install -y ffmpeg"
+    buildCommand: "npm install && apt-get install -y ffmpeg"
     startCommand: "node server.js"
