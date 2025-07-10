@@ -6,7 +6,7 @@ const path = require('path');
 const ffmpeg = require('fluent-ffmpeg');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // --- データベースとファイル保存の設定 (変更なし) ---
 const DB_PATH = path.join(__dirname, 'database.json');
