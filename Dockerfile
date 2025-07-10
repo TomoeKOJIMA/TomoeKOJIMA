@@ -11,7 +11,5 @@ RUN npm install
 # 4. プロジェクトのすべてのファイルをコピー
 COPY . .
 
-EXPOSE 10000
-
 # 5. アプリを起動するコマンドを指定
 CMD [ "node", "server.js" ]
