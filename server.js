@@ -64,6 +64,6 @@ app.post('/api/record', upload.single('audio'), async (req, res) => {
 });
 
 // サーバー起動
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`サーバーがポート ${PORT} で起動しました。`);
 });
