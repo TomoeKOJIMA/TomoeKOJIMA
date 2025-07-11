@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const multer = require('multer');
 const { Dropbox } = require('dropbox');
@@ -13,18 +15,39 @@ app.use(express.static(__dirname));
 
 // 番号が使用済みかチェックするAPI
 app.get('/api/check_number', async (req, res) => {
-    const number = req.query.number;
-    const dropboxPath = `/${number.substring(1)}.wav`;
     try {
-        await dbx.filesGetMetadata({ path: dropboxPath });
-        res.json({ available: false });
-    } catch (error) {
-        if (error.status === 409) {
-            res.json({ available: true });
-        } else {
-            console.error("Dropbox check error:", error);
-            res.status(500).json({ message: 'サーバーエラーが発生しました。' });
+        const number = req.query.number;
+
+        // numberが存在しない、または空文字の場合はエラーを返す
+        if (!number) {
+            console.log("リクエストに number が含まれていませんでした。");
+            return res.status(400).json({ message: 'クエリパラメータ "number" が必要です。' });
         }
+
+        console.log(`受け取った番号: ${number}`); // どんな値が来たかログで確認
+
+        const dropboxPath = `/${number.substring(1)}.wav`;
+        console.log(`確認するDropboxパス: ${dropboxPath}`); // 生成されたパスも確認
+
+        try {
+            // DropboxのAPIを呼び出す
+            await dbx.filesGetMetadata({ path: dropboxPath });
+            // ファイルが存在した場合
+            res.json({ available: false });
+        } catch (dropboxError) {
+            // Dropbox APIからのエラーを処理
+            if (dropboxError.status === 409) {
+                // ファイルが存在しない場合 (これが正常な「利用可能」ケース)
+                res.json({ available: true });
+            } else {
+                // その他のDropboxエラー
+                throw dropboxError; // 外側のcatchにエラーを投げる
+            }
+        }
+    } catch (error) {
+        // 予期せぬ全体的なエラーをキャッチ
+        console.error("★★★★ /api/check_number で予期せぬエラーが発生しました ★★★★", error);
+        res.status(500).json({ message: 'サーバー内部でエラーが発生しました。' });
     }
 });
 
