@@ -6,12 +6,19 @@ const { Dropbox } = require('dropbox');
 const ffmpeg = require('fluent-ffmpeg');
 const { Readable } = require('stream');
 
-// Dropboxのアクセストークンが設定されているか確認
-if (!process.env.DROPBOX_ACCESS_TOKEN) {
-    console.error("★★★★ 環境変数 DROPBOX_ACCESS_TOKEN が設定されていません。アプリを終了します。 ★★★★");
+// Dropbox認証に必要な環境変数が設定されているか確認
+// DROPBOX_ACCESS_TOKEN の代わりに、リフレッシュトークンとクライアント情報を使用します
+if (!process.env.DROPBOX_APP_KEY || !process.env.DROPBOX_APP_SECRET || !process.env.DROPBOX_REFRESH_TOKEN) {
+    console.error("★★★★ Dropbox認証に必要な環境変数 (DROPBOX_APP_KEY, DROPBOX_APP_SECRET, DROPBOX_REFRESH_TOKEN) が設定されていません。アプリを終了します。 ★★★★");
     process.exit(1); // アプリを強制終了
 }
-const dbx = new Dropbox({ accessToken: process.env.DROPBOX_ACCESS_TOKEN });
+
+// Dropboxインスタンスを初期化。リフレッシュトークンを使ってアクセストークンを自動更新します。
+const dbx = new Dropbox({
+    clientId: process.env.DROPBOX_APP_KEY,
+    clientSecret: process.env.DROPBOX_APP_SECRET,
+    refreshToken: process.env.DROPBOX_REFRESH_TOKEN,
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,10 +42,12 @@ app.get('/api/check_number', async (req, res) => {
             await dbx.filesGetMetadata({ path: dropboxPath });
             res.json({ available: false }); // ファイルが存在する = 使用不可
         } catch (dropboxError) {
+            // Dropbox APIが409 (conflict) を返した場合、ファイルが存在しないことを意味します
             if (dropboxError.status === 409) {
                 res.json({ available: true }); // ファイルが存在しない = 使用可能
             } else {
-                throw dropboxError; // その他のDropboxエラーは外側のcatchへ
+                // その他のDropboxエラーは外側のcatchへ
+                throw dropboxError;
             }
         }
     } catch (error) {
@@ -49,7 +58,6 @@ app.get('/api/check_number', async (req, res) => {
 
 // Dropboxから一時的なダウンロードリンクを取得するAPI
 app.get('/api/listen', async (req, res) => {
-    // ★★★ ここを修正 ★★★
     try {
         const number = req.query.number;
         if (!number) {
@@ -65,7 +73,8 @@ app.get('/api/listen', async (req, res) => {
         res.json({ success: true, link: result.link, number: number });
 
     } catch (error) {
-        if (error.status === 409) {
+        // ファイルが見つからない場合は404を返します
+        if (error.status === 409) { // Dropbox APIはファイルが見つからない場合も409を返すことがあります
             res.status(404).json({ message: 'その番号の伝言は見つかりませんでした。' });
         } else {
             console.error("★★★★ /api/listen で予期せぬエラー ★★★★", error);
@@ -79,6 +88,7 @@ app.get('/api/listen', async (req, res) => {
 app.post('/api/record', upload.single('audio'), async (req, res) => {
     try {
         const requestedNumber = req.body.number;
+        // ファイル名から最初の文字 ('#') を削除
         const fileName = `${requestedNumber.substring(1)}.wav`;
         const dropboxPath = `/${fileName}`;
 
@@ -93,7 +103,10 @@ app.post('/api/record', upload.single('audio'), async (req, res) => {
             
             ffmpeg(readableStream)
                 .toFormat('wav')
-                .on('error', (err) => reject(new Error('FFmpeg conversion error: ' + err.message)))
+                .on('error', (err) => {
+                    console.error("FFmpeg変換エラー:", err.message);
+                    reject(new Error('FFmpeg変換エラー: ' + err.message));
+                })
                 .stream()
                 .on('data', (chunk) => chunks.push(chunk))
                 .on('end', () => resolve(Buffer.concat(chunks)));
@@ -103,6 +116,7 @@ app.post('/api/record', upload.single('audio'), async (req, res) => {
         await dbx.filesUpload({
             path: dropboxPath,
             contents: wavBuffer,
+            mode: { '.tag': 'overwrite' } // 既存のファイルがあれば上書き
         });
 
         res.status(201).json({ success: true, newNumber: requestedNumber });
