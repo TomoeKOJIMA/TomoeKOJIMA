@@ -12,10 +12,14 @@
             width: 100%;
             height: 100vh; /* 画面全体の高さを100%にする */
 
-            /* ▼上下左右の中央揃えにします▼ */
+            /* ▼レイアウト設定▼ */
             display: flex;
             justify-content: center; /* 水平方向の中央揃え */
-            align-items: center;     /* 垂直方向の中央揃え */
+            align-items: flex-start;   /* 垂直方向の上揃え */
+            
+            /* 上部に少しだけ余白を持たせる */
+            padding-top: 5vh; 
+            box-sizing: border-box; /* paddingを含めて高さを100vhにするため */
         }
         #image-mask {
             width: 100%;
@@ -41,36 +45,24 @@
         let fullHeight = 0;
         let currentStepIndex = 0;
 
-        // ▼ ランダムなアニメーションパターンを生成する関数 ▼
+        // ランダムなアニメーションパターンを生成する関数
         function generateRandomSteps() {
             const steps = [];
             let cumulativePercent = 0;
-
-            // 合計が90%に達するまで、ランダムなステップを追加し続ける
             while (cumulativePercent < 0.9) {
-                // 1回の表示量 (10%～30%の間でランダム)
-                const chunk = Math.random() * 0.2 + 0.1; 
-                // 停止時間 (0.5秒～2秒の間でランダム)
-                const pause = Math.floor(Math.random() * 1501) + 500; 
-
+                const chunk = Math.random() * 0.2 + 0.1;
+                const pause = Math.floor(Math.random() * 1501) + 500;
                 cumulativePercent += chunk;
                 steps.push({ toPercent: cumulativePercent, pauseAfter: pause });
             }
-
-            // 最後に必ず100%で終わるようにする
             steps.push({ toPercent: 1.0, pauseAfter: 0 });
             return steps;
         }
 
-        // ▼ ここでランダム生成関数を呼び出す ▼
         const steps = generateRandomSteps();
+        const intervalTime = 16; // 更新の速さ
 
-
-        // --- 以下のアニメーション実行コード ---
-
-        const pixelsPerFrame = 5;
-        const intervalTime = 16;
-
+        // 指定した高さまでマスクを広げる関数
         function animateTo(targetHeight) {
             const revealInterval = setInterval(() => {
                 let currentHeight = parseFloat(mask.style.height) || 0;
@@ -84,11 +76,21 @@
                         runNextStep();
                     }, steps[currentStepIndex].pauseAfter);
                 } else {
-                    mask.style.height = (currentHeight + pixelsPerFrame) + 'px';
+                    // ▼ ここからが速度調整のロジックです ▼
+                    let speed;
+                    // 画像全体の20%未満しか表示されていない場合は、速度を1にする
+                    if (currentHeight < fullHeight * 0.2) {
+                        speed = 1; // 非常に遅いスピード
+                    } else {
+                        speed = 5; // それ以降は通常のスピード
+                    }
+                    mask.style.height = (currentHeight + speed) + 'px';
+                    // ▲ ここまでが速度調整のロジックです ▲
                 }
             }, intervalTime);
         }
 
+        // 次のステップを実行する関数
         function runNextStep() {
             if (currentStepIndex >= steps.length) return;
             const targetPercent = steps[currentStepIndex].toPercent;
@@ -96,6 +98,7 @@
             animateTo(targetHeight);
         }
 
+        // 画像の高さが取得できるのを待ってから、アニメーションを開始する
         const startupInterval = setInterval(() => {
             if (image.scrollHeight > 0) {
                 clearInterval(startupInterval);
