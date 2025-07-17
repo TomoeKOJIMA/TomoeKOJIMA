@@ -1,146 +1,120 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>つくるについて考える</title>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      background-color: #333;
-      width: 100%;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding-top: 5vh;
-      box-sizing: border-box;
-    }
-    #image-mask {
-      width: 100%;
-      max-width: 850px;
-      height: 0;
-      overflow: hidden;
-    }
-    #image-mask img {
-      display: block;
-      width: 100%;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>つくるについて考える</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            background-color: #333;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 5vh;
+            box-sizing: border-box;
+        }
+        #image-mask {
+            width: 100%;
+            max-width: 850px;
+            height: 0;
+            overflow: hidden;
+        }
+        #image-mask img {
+            display: block;
+            width: 100%;
+        }
+    </style>
 </head>
 <body>
 
-<div id="image-mask">
-  <img id="reveal-image" src="gallery1_plan.png" alt="Loading Document...">
-</div>
+    <div id="image-mask">
+        <img id="reveal-image" src="gallery1_plan.png" alt="Loading Document...">
+    </div>
 
-<script>
-  const mask = document.getElementById('image-mask');
-  const image = document.getElementById('reveal-image');
-  let fullHeight = 0;
-  let currentStepIndex = 0;
+    <script>
+        const mask = document.getElementById('image-mask');
+        const image = document.getElementById('reveal-image');
+        let fullHeight = 0;
+        let currentStepIndex = 0;
 
-  function generateRandomBlocks() {
-    const steps = [];
-    let cumulativePercent = 0;
-    const blockCount = Math.floor(Math.random() * 16) + 20; // 20〜35個
+        // ランダムなブロック分割を生成する関数
+        function generateRandomBlocks() {
+            const steps = [];
+            let cumulativePercent = 0;
+            
+            // ▼ ブロックの数を15～30の間でランダムに決める ▼
+            const blockCount = Math.floor(Math.random() * 16) + 15;
 
-    for (let i = 0; i < blockCount; i++) {
-      let chunkSize = Math.random();
+            for (let i = 0; i < blockCount; i++) {
+                let chunkSize = Math.random();
+                
+                if (i === blockCount - 1) {
+                    cumulativePercent = 1.0;
+                } else {
+                    cumulativePercent += chunkSize / blockCount;
+                    if (cumulativePercent > 0.98) {
+                        cumulativePercent = 0.98;
+                    }
+                }
+                
+                steps.push({
+                    toPercent: cumulativePercent,
+                    // ▼ ブロック自体の表示速度を速く（15～30）▼
+                    speed: Math.random() * 15 + 15,
+                    // ▼ ブロック間の待ち時間を長く（3秒～8秒）▼
+                    pauseAfter: Math.floor(Math.random() * 5001) + 3000 
+                });
 
-      if (i === blockCount - 1) {
-        cumulativePercent = 1.0;
-      } else {
-        cumulativePercent += chunkSize / blockCount;
-        if (cumulativePercent > 0.98) {
-          cumulativePercent = 0.98;
+                if (cumulativePercent >= 1.0) break;
+            }
+            return steps;
         }
-      }
 
-      steps.push({
-        toPercent: cumulativePercent,
-        speed: Math.random() * 50 + 20, // 20〜70 px/frame（一部早く）
-        pauseAfter: Math.floor(Math.random() * 1001) + 500 // 0.5〜1.5秒
-      });
 
-      if (cumulativePercent >= 1.0) break;
-    }
+        const steps = generateRandomBlocks();
+        const intervalTime = 16; 
 
-    return steps;
-  }
+        // 指定した高さまで、指定した速度でマスクを広げる関数
+        function animateTo(targetHeight, speed) {
+            const revealInterval = setInterval(() => {
+                let currentHeight = parseFloat(mask.style.height) || 0;
+                
+                if (currentHeight >= targetHeight) {
+                    clearInterval(revealInterval);
+                    mask.style.height = targetHeight + 'px';
+                    
+                    setTimeout(() => {
+                        currentStepIndex++;
+                        runNextStep();
+                    }, steps[currentStepIndex -1].pauseAfter);
+                } else {
+                    mask.style.height = (currentHeight + speed) + 'px';
+                }
+            }, intervalTime);
+        }
 
-  const steps = generateRandomBlocks();
-  console.log('Generated steps:', steps);
+        // 次のステップを実行する関数
+        function runNextStep() {
+            if (currentStepIndex >= steps.length) return;
 
-  // intervalTimeを少し長くしてCPU負荷軽減
-  const intervalTime = 50;
+            const step = steps[currentStepIndex];
+            const targetHeight = fullHeight * step.toPercent;
+            animateTo(targetHeight, step.speed);
+        }
 
-  function animateTo(targetHeight, speed) {
-    const step = steps[currentStepIndex];
-    console.log(`animateTo: stepIndex=${currentStepIndex}, targetHeight=${targetHeight}, speed=${speed}`);
-    let lastLogTime = 0;
-
-    const revealInterval = setInterval(() => {
-      let now = performance.now();
-      let currentHeight = parseFloat(mask.style.height) || 0;
-
-      // ログ頻度を100msごとに制限
-      if (now - lastLogTime > 100) {
-        console.log(`Animating step ${currentStepIndex}: currentHeight=${currentHeight}`);
-        lastLogTime = now;
-      }
-
-      if (currentHeight >= targetHeight) {
-        clearInterval(revealInterval);
-        mask.style.height = targetHeight + 'px';
-        console.log(`step ${currentStepIndex} done, pausing ${step.pauseAfter}ms`);
-
-        setTimeout(() => {
-          currentStepIndex++;
-          console.log(`Moving to next step: ${currentStepIndex}`);
-          runNextStep();
-        }, step.pauseAfter);
-      } else {
-        let nextHeight = currentHeight + speed;
-        if (nextHeight > targetHeight) nextHeight = targetHeight;
-        mask.style.height = `${nextHeight}px`;
-      }
-    }, intervalTime);
-  }
-
-  function runNextStep() {
-    console.log(`runNextStep called with currentStepIndex=${currentStepIndex}`);
-    if (currentStepIndex >= steps.length) {
-      console.log('All steps finished.');
-      return;
-    }
-
-    const step = steps[currentStepIndex];
-    const targetHeight = fullHeight * step.toPercent;
-    console.log(`Next step targetHeight=${targetHeight}`);
-
-    const currentHeight = parseFloat(mask.style.height) || 0;
-    if (targetHeight <= currentHeight) {
-      currentStepIndex++;
-      console.log('Target height <= current height, skipping to next step:', currentStepIndex);
-      runNextStep();
-      return;
-    }
-
-    animateTo(targetHeight, step.speed);
-  }
-
-  const startupInterval = setInterval(() => {
-    console.log('Waiting for image height...');
-    if (image.scrollHeight > 0) {
-      clearInterval(startupInterval);
-      fullHeight = image.scrollHeight;
-      console.log('Image height:', fullHeight);
-      setTimeout(runNextStep, 800);
-    }
-  }, 100);
-</script>
+        // 画像の高さが取得できるのを待ってから、すべてを開始する
+        const startupInterval = setInterval(() => {
+            if (image.scrollHeight > 0) {
+                clearInterval(startupInterval);
+                fullHeight = image.scrollHeight;
+                setTimeout(runNextStep, 1500);
+            }
+        }, 100);
+    </script>
 
 </body>
 </html>
