@@ -41,17 +41,14 @@
         let fullHeight = 0;
         let currentStepIndex = 0;
 
-        // ランダムなブロック分割を生成する関数
+        // ランダムなブロック分割を生成する関数（速く、短く調整済み）
         function generateRandomBlocks() {
             const steps = [];
             let cumulativePercent = 0;
-            
-            // ▼ ブロックの数を15～30の間でランダムに決める ▼
-            const blockCount = Math.floor(Math.random() * 16) + 15;
+            const blockCount = Math.floor(Math.random() * 16) + 15; // 15～30ブロック
 
             for (let i = 0; i < blockCount; i++) {
                 let chunkSize = Math.random();
-                
                 if (i === blockCount - 1) {
                     cumulativePercent = 1.0;
                 } else {
@@ -60,37 +57,36 @@
                         cumulativePercent = 0.98;
                     }
                 }
-                
+
                 steps.push({
                     toPercent: cumulativePercent,
-                    // ▼ ブロック自体の表示速度を速く（15～30）▼
-                    speed: Math.random() * 15 + 15,
-                    // ▼ ブロック間の待ち時間を長く（3秒～8秒）▼
-                    pauseAfter: Math.floor(Math.random() * 5001) + 3000 
+                    speed: Math.random() * 30 + 50, // 50〜80 px/frame（速く表示）
+                    pauseAfter: Math.floor(Math.random() * 301) + 200 // 200〜500 ms（短く待機）
                 });
 
                 if (cumulativePercent >= 1.0) break;
             }
+
             return steps;
         }
 
-
         const steps = generateRandomBlocks();
-        const intervalTime = 16; 
+        const intervalTime = 16;
 
-        // 指定した高さまで、指定した速度でマスクを広げる関数
+        // 指定した高さまでマスクを広げる関数
         function animateTo(targetHeight, speed) {
+            const step = steps[currentStepIndex];
             const revealInterval = setInterval(() => {
                 let currentHeight = parseFloat(mask.style.height) || 0;
-                
+
                 if (currentHeight >= targetHeight) {
                     clearInterval(revealInterval);
                     mask.style.height = targetHeight + 'px';
-                    
+
                     setTimeout(() => {
                         currentStepIndex++;
                         runNextStep();
-                    }, steps[currentStepIndex -1].pauseAfter);
+                    }, step.pauseAfter); // 安全な pauseAfter 呼び出し
                 } else {
                     mask.style.height = (currentHeight + speed) + 'px';
                 }
@@ -106,12 +102,12 @@
             animateTo(targetHeight, step.speed);
         }
 
-        // 画像の高さが取得できるのを待ってから、すべてを開始する
+        // 画像の読み込みを待ってからスタート
         const startupInterval = setInterval(() => {
             if (image.scrollHeight > 0) {
                 clearInterval(startupInterval);
                 fullHeight = image.scrollHeight;
-                setTimeout(runNextStep, 1500);
+                setTimeout(runNextStep, 500); // 開始まで少し待機
             }
         }, 100);
     </script>
