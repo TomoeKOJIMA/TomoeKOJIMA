@@ -41,7 +41,7 @@
         let fullHeight = 0;
         let currentStepIndex = 0;
 
-        // ランダムなブロック分割を生成する関数（速く、短く調整済み）
+        // ランダムなブロック分割を生成する関数
         function generateRandomBlocks() {
             const steps = [];
             let cumulativePercent = 0;
@@ -60,8 +60,8 @@
 
                 steps.push({
                     toPercent: cumulativePercent,
-                    speed: Math.random() * 30 + 50, // 50〜80 px/frame（速く表示）
-                    pauseAfter: Math.floor(Math.random() * 301) + 200 // 200〜500 ms（短く待機）
+                    speed: Math.random() * 15 + 15, // 15〜30 px/frame
+                    pauseAfter: Math.floor(Math.random() * 5001) + 3000 // 3000〜8000 ms
                 });
 
                 if (cumulativePercent >= 1.0) break;
@@ -86,7 +86,7 @@
                     setTimeout(() => {
                         currentStepIndex++;
                         runNextStep();
-                    }, step.pauseAfter); // 安全な pauseAfter 呼び出し
+                    }, step.pauseAfter); // 修正済み：currentStepIndex - 1 ではなく step を使う
                 } else {
                     mask.style.height = (currentHeight + speed) + 'px';
                 }
@@ -107,7 +107,7 @@
             if (image.scrollHeight > 0) {
                 clearInterval(startupInterval);
                 fullHeight = image.scrollHeight;
-                setTimeout(runNextStep, 500); // 開始まで少し待機
+                setTimeout(runNextStep, 1500);
             }
         }, 100);
     </script>
