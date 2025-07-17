@@ -41,14 +41,14 @@
         let fullHeight = 0;
         let currentStepIndex = 0;
 
-        // ランダムなブロック分割を生成する関数
         function generateRandomBlocks() {
             const steps = [];
             let cumulativePercent = 0;
-            const blockCount = Math.floor(Math.random() * 16) + 15; // 15～30ブロック
+            const blockCount = Math.floor(Math.random() * 16) + 15;
 
             for (let i = 0; i < blockCount; i++) {
                 let chunkSize = Math.random();
+
                 if (i === blockCount - 1) {
                     cumulativePercent = 1.0;
                 } else {
@@ -60,8 +60,8 @@
 
                 steps.push({
                     toPercent: cumulativePercent,
-                    speed: Math.random() * 15 + 15, // 15〜30 px/frame
-                    pauseAfter: Math.floor(Math.random() * 5001) + 3000 // 3000〜8000 ms
+                    speed: Math.random() * 15 + 15, // 少し遅く戻す（15〜30px/frame）
+                    pauseAfter: Math.floor(Math.random() * 2001) + 2000 // 2秒〜4秒
                 });
 
                 if (cumulativePercent >= 1.0) break;
@@ -73,41 +73,52 @@
         const steps = generateRandomBlocks();
         const intervalTime = 16;
 
-        // 指定した高さまでマスクを広げる関数
         function animateTo(targetHeight, speed) {
             const step = steps[currentStepIndex];
             const revealInterval = setInterval(() => {
                 let currentHeight = parseFloat(mask.style.height) || 0;
 
+                // ★ 高さのオーバーラン防止
                 if (currentHeight >= targetHeight) {
                     clearInterval(revealInterval);
                     mask.style.height = targetHeight + 'px';
 
+                    // 次のステップへ（pauseAfterミス防止）
                     setTimeout(() => {
                         currentStepIndex++;
                         runNextStep();
-                    }, step.pauseAfter); // 修正済み：currentStepIndex - 1 ではなく step を使う
+                    }, step.pauseAfter);
                 } else {
-                    mask.style.height = (currentHeight + speed) + 'px';
+                    // ★ 毎回少しだけ伸ばす
+                    let nextHeight = currentHeight + speed;
+                    if (nextHeight > targetHeight) nextHeight = targetHeight;
+                    mask.style.height = nextHeight + 'px';
                 }
             }, intervalTime);
         }
 
-        // 次のステップを実行する関数
         function runNextStep() {
             if (currentStepIndex >= steps.length) return;
 
             const step = steps[currentStepIndex];
             const targetHeight = fullHeight * step.toPercent;
+
+            // ★ 高さがすでに超えてる場合はスキップ
+            const currentHeight = parseFloat(mask.style.height) || 0;
+            if (targetHeight <= currentHeight) {
+                currentStepIndex++;
+                runNextStep();
+                return;
+            }
+
             animateTo(targetHeight, step.speed);
         }
 
-        // 画像の読み込みを待ってからスタート
         const startupInterval = setInterval(() => {
             if (image.scrollHeight > 0) {
                 clearInterval(startupInterval);
                 fullHeight = image.scrollHeight;
-                setTimeout(runNextStep, 1500);
+                setTimeout(runNextStep, 800); // 少しだけ待機
             }
         }, 100);
     </script>
