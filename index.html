@@ -9,11 +9,17 @@
             margin: 0;
             padding: 0;
             background-color: #333;
+            width: 100%;
+            height: 100vh; /* 画面全体の高さを100%にする */
+
+            /* ▼上下左右の中央揃えにします▼ */
+            display: flex;
+            justify-content: center; /* 水平方向の中央揃え */
+            align-items: center;     /* 垂直方向の中央揃え */
         }
         #image-mask {
             width: 100%;
             max-width: 850px;
-            margin: 0 auto;
             height: 0;
             overflow: hidden;
         }
@@ -31,24 +37,72 @@
 
     <script>
         const mask = document.getElementById('image-mask');
-        const image = document.getElementById('reveal-image'); // idで画像を取得
-        let currentHeight = 0;
+        const image = document.getElementById('reveal-image');
+        let fullHeight = 0;
+        let currentStepIndex = 0;
 
-        const pixelsPerFrame = 2;
+        // ▼ ランダムなアニメーションパターンを生成する関数 ▼
+        function generateRandomSteps() {
+            const steps = [];
+            let cumulativePercent = 0;
+
+            // 合計が90%に達するまで、ランダムなステップを追加し続ける
+            while (cumulativePercent < 0.9) {
+                // 1回の表示量 (10%～30%の間でランダム)
+                const chunk = Math.random() * 0.2 + 0.1; 
+                // 停止時間 (0.5秒～2秒の間でランダム)
+                const pause = Math.floor(Math.random() * 1501) + 500; 
+
+                cumulativePercent += chunk;
+                steps.push({ toPercent: cumulativePercent, pauseAfter: pause });
+            }
+
+            // 最後に必ず100%で終わるようにする
+            steps.push({ toPercent: 1.0, pauseAfter: 0 });
+            return steps;
+        }
+
+        // ▼ ここでランダム生成関数を呼び出す ▼
+        const steps = generateRandomSteps();
+
+
+        // --- 以下のアニメーション実行コード ---
+
+        const pixelsPerFrame = 5;
         const intervalTime = 16;
 
-        const revealImage = setInterval(() => {
-            currentHeight += pixelsPerFrame;
-            mask.style.height = currentHeight + 'px';
+        function animateTo(targetHeight) {
+            const revealInterval = setInterval(() => {
+                let currentHeight = parseFloat(mask.style.height) || 0;
+                
+                if (currentHeight >= targetHeight) {
+                    clearInterval(revealInterval);
+                    mask.style.height = targetHeight + 'px';
+                    
+                    setTimeout(() => {
+                        currentStepIndex++;
+                        runNextStep();
+                    }, steps[currentStepIndex].pauseAfter);
+                } else {
+                    mask.style.height = (currentHeight + pixelsPerFrame) + 'px';
+                }
+            }, intervalTime);
+        }
 
-            // ▼ 画像の実際の高さを取得して、それを超えたら停止するように変更 ▼
-            // image.scrollHeightで画像の全長が自動でわかる
-            if (currentHeight >= image.scrollHeight && image.scrollHeight > 0) {
-                clearInterval(revealImage);
-                // 念のため、最終的な高さを画像の高さにきっちり合わせる
-                mask.style.height = image.scrollHeight + 'px';
+        function runNextStep() {
+            if (currentStepIndex >= steps.length) return;
+            const targetPercent = steps[currentStepIndex].toPercent;
+            const targetHeight = fullHeight * targetPercent;
+            animateTo(targetHeight);
+        }
+
+        const startupInterval = setInterval(() => {
+            if (image.scrollHeight > 0) {
+                clearInterval(startupInterval);
+                fullHeight = image.scrollHeight;
+                runNextStep();
             }
-        }, intervalTime);
+        }, 100);
     </script>
 
 </body>
