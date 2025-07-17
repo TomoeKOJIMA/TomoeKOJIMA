@@ -5,27 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>作品解説</title>
     <style>
-        /* ページの余白をなくし、背景を灰色にする */
-        body {
+        body, html {
             margin: 0;
             padding: 0;
-            background-color: #525252;
-            height: 100vh; /* 画面全体の高さを確保 */
-            display: flex; /* 中央揃えのため */
-            justify-content: center; /* 中央揃えのため */
-            align-items: center; /* 中央揃えのため */
+            width: 100%;
+            height: 100%;
+            background-color: #333; /* 暗い背景色 */
+            color: white;
+            font-family: sans-serif;
+            text-align: center;
         }
-        /* PDFを埋め込むフレームの設定 */
-        iframe {
-            width: 90%; /* 画面の横幅の90% */
-            height: 90%; /* 画面の高さの90% */
-            border: 1px solid #ccc;
+        /* <embed>タグはPDFを表示するメインの要素 */
+        .pdf-viewer {
+            width: 100%;
+            height: 90%; /* 画面の高さの90%を占める */
+        }
+        /* 埋め込み失敗時に表示する予備のリンク */
+        .fallback {
+            padding: 20px;
+        }
+        .fallback a {
+            color: #8cdeff; /* 見やすいリンク色 */
+            font-size: 1.2em;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
 
-    <iframe src="gallery1_plan.pdf"></iframe>
+    <embed class="pdf-viewer" src="gallery1_plan.pdf" type="application/pdf">
+
+    <div class="fallback">
+        <p>PDFがこのページに表示されない場合は、</p>
+        <a href="gallery1_plan.pdf" target="_blank">こちらをクリックして直接開いてください。</a>
+    </div>
 
 </body>
 </html>
