@@ -10,19 +10,15 @@
             padding: 0;
             background-color: #333;
         }
-        /* 画像を包むコンテナ（これがマスクの役割を果たす） */
         #image-mask {
             width: 100%;
-            max-width: 850px; /* PDFの紙幅のような見た目に */
-            margin: 0 auto; /* 中央揃え */
-            
-            /* ▼ここが重要▼ */
-            height: 0;          /* 最初は高さを0にする */
-            overflow: hidden;   /* コンテナからはみ出た部分を隠す */
+            max-width: 850px;
+            margin: 0 auto;
+            height: 0;
+            overflow: hidden;
         }
-        /* 表示する画像 */
         #image-mask img {
-            display: block; /* 余計な隙間をなくす */
+            display: block;
             width: 100%;
         }
     </style>
@@ -30,26 +26,27 @@
 <body>
 
     <div id="image-mask">
-        <img src="gallery1_plan.png" alt="Loading Document...">
+        <img id="reveal-image" src="gallery1_plan.png" alt="Loading Document...">
     </div>
 
     <script>
         const mask = document.getElementById('image-mask');
+        const image = document.getElementById('reveal-image'); // idで画像を取得
         let currentHeight = 0;
 
-        // ▼ シミュレーションの調整 ▼
-        const pixelsPerFrame = 2; // 1回の更新で何ピクセル表示するか
-        const intervalTime = 16;  // 更新間隔 (ミリ秒, 16 ≈ 60fps)
+        const pixelsPerFrame = 2;
+        const intervalTime = 16;
 
         const revealImage = setInterval(() => {
             currentHeight += pixelsPerFrame;
             mask.style.height = currentHeight + 'px';
 
-            // 画像の高さ以上にコンテナが広がったら停止
-            // 3000という数値は、あなたの画像のおおよその高さを超える適当な大きい値。
-            // 実際の画像の高さに合わせて調整するとより正確になります。
-            if (currentHeight >= 3000) {
+            // ▼ 画像の実際の高さを取得して、それを超えたら停止するように変更 ▼
+            // image.scrollHeightで画像の全長が自動でわかる
+            if (currentHeight >= image.scrollHeight && image.scrollHeight > 0) {
                 clearInterval(revealImage);
+                // 念のため、最終的な高さを画像の高さにきっちり合わせる
+                mask.style.height = image.scrollHeight + 'px';
             }
         }, intervalTime);
     </script>
