@@ -8,104 +8,50 @@
         body, html {
             margin: 0;
             padding: 0;
+            background-color: #333;
+        }
+        /* 画像を包むコンテナ（これがマスクの役割を果たす） */
+        #image-mask {
             width: 100%;
-            height: 100%;
-            background-color: #333; /* 暗い背景色 */
-            color: white;
-            font-family: sans-serif;
-            text-align: center;
+            max-width: 850px; /* PDFの紙幅のような見た目に */
+            margin: 0 auto; /* 中央揃え */
+            
+            /* ▼ここが重要▼ */
+            height: 0;          /* 最初は高さを0にする */
+            overflow: hidden;   /* コンテナからはみ出た部分を隠す */
         }
-
-        /* --- ここから追加 --- */
-        /* ローディング画面のスタイル */
-        #loading-screen {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+        /* 表示する画像 */
+        #image-mask img {
+            display: block; /* 余計な隙間をなくす */
             width: 100%;
-            height: 100%;
-        }
-        #progress-bar-container {
-            width: 80%;
-            max-width: 500px;
-            border: 1px solid #ccc;
-            margin-bottom: 20px;
-        }
-        #progress-bar {
-            width: 0%; /* 最初は0% */
-            height: 20px;
-            background-color: #f0f0f0;
-        }
-        #progress-label {
-            font-size: 1.2em;
-        }
-        /* --- ここまで追加 --- */
-
-        /* PDFコンテンツは最初は非表示 */
-        #pdf-content {
-            display: none;
-            width: 100%;
-            height: 100%;
-        }
-        .pdf-viewer {
-            width: 100%;
-            height: 90%;
-        }
-        .fallback {
-            padding: 10px;
-        }
-        .fallback a {
-            color: #8cdeff;
-            font-size: 1.2em;
-            font-weight: bold;
         }
     </style>
 </head>
 <body>
 
-    <div id="loading-screen">
-        <div id="progress-bar-container">
-            <div id="progress-bar"></div>
-        </div>
-        <p id="progress-label">Loading Document...</p>
-    </div>
-
-    <div id="pdf-content">
-        <embed class="pdf-viewer" src="gallery1_plan.pdf" type="application/pdf">
-        <div class="fallback">
-            <p>PDFが表示されない場合は、<a href="gallery1_plan.pdf" target="_blank">こちらをクリック</a></p>
-        </div>
+    <div id="image-mask">
+        <img src="gallery1_plan.png" alt="Loading Document...">
     </div>
 
     <script>
-        const loadingScreen = document.getElementById('loading-screen');
-        const pdfContent = document.getElementById('pdf-content');
-        const bar = document.getElementById('progress-bar');
-        const label = document.getElementById('progress-label');
-        let width = 0;
+        const mask = document.getElementById('image-mask');
+        let currentHeight = 0;
 
-        // ▼ シミュレーションの時間調整 ▼
-        // この数値を大きくすると、ローディングがよりゆっくり進みます。(ミリ秒単位, 1000 = 1秒)
-        const loadingSpeed = 100;
+        // ▼ シミュレーションの調整 ▼
+        const pixelsPerFrame = 2; // 1回の更新で何ピクセル表示するか
+        const intervalTime = 16;  // 更新間隔 (ミリ秒, 16 ≈ 60fps)
 
-        const progressInterval = setInterval(() => {
-            width++;
-            bar.style.width = width + '%';
-            label.textContent = `Loading Document... ${width}%`;
+        const revealImage = setInterval(() => {
+            currentHeight += pixelsPerFrame;
+            mask.style.height = currentHeight + 'px';
 
-            // 100%になったら
-            if (width >= 100) {
-                clearInterval(progressInterval);
-                label.textContent = "Complete.";
-
-                // 1秒後にローディング画面を消してPDFを表示
-                setTimeout(() => {
-                    loadingScreen.style.display = 'none';
-                    pdfContent.style.display = 'block';
-                }, 1000);
+            // 画像の高さ以上にコンテナが広がったら停止
+            // 3000という数値は、あなたの画像のおおよその高さを超える適当な大きい値。
+            // 実際の画像の高さに合わせて調整するとより正確になります。
+            if (currentHeight >= 3000) {
+                clearInterval(revealImage);
             }
-        }, loadingSpeed);
+        }, intervalTime);
     </script>
 
 </body>
