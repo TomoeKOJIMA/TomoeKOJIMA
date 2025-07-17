@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>作品解説</title>
+    <title>つくるについて考える</title>
     <style>
         body, html {
             margin: 0;
@@ -22,8 +22,6 @@
             max-width: 850px;
             height: 0;
             overflow: hidden;
-            /* 表示が切り替わるアニメーションを少しだけ滑らかにする（任意） */
-            transition: height 0.2s ease-in-out;
         }
         #image-mask img {
             display: block;
@@ -41,37 +39,87 @@
         const mask = document.getElementById('image-mask');
         const image = document.getElementById('reveal-image');
         let fullHeight = 0;
-        let currentStep = 0;
+        let currentStepIndex = 0;
 
-        // ▼ ブロックの区切り位置をここで定義します ▼
-        // 4つのブロックに分ける例 (25% -> 50% -> 75% -> 100%)
-        const blockBoundaries = [0.25, 0.5, 0.75, 1.0];
+        // ▼▼▼ ここからが、すべてをランダムにするための心臓部です ▼▼▼
 
-        function showNextBlock() {
-            // 全てのブロックを表示したら終了
-            if (currentStep >= blockBoundaries.length) return;
-
-            // 次に表示するブロックの高さを計算
-            const targetPercent = blockBoundaries[currentStep];
-            const targetHeight = fullHeight * targetPercent;
+        // ランダムなブロック分割を生成する関数
+        function generateRandomBlocks() {
+            const steps = [];
+            let cumulativePercent = 0;
             
-            // マスクの高さを一気に変更してブロックを表示
-            mask.style.height = targetHeight + 'px';
-            
-            currentStep++; // 次のステップへ
+            // 5～15の間で、ブロックの数をランダムに決める
+            const blockCount = Math.floor(Math.random() * 11) + 5;
 
-            // 次のブロックが表示されるまでの時間をランダムに決める
-            const randomDelay = Math.random() * 1500 + 800; // 0.8秒～2.3秒
-            setTimeout(showNextBlock, randomDelay);
+            for (let i = 0; i < blockCount; i++) {
+                // 各ブロックの大きさをランダムに決める
+                let chunkSize = Math.random();
+                
+                // 最後のブロックは必ず100%になるように調整
+                if (i === blockCount - 1) {
+                    cumulativePercent = 1.0;
+                } else {
+                    // 95%を超えない範囲で大きさを決める
+                    cumulativePercent += chunkSize / blockCount;
+                    if (cumulativePercent > 0.95) {
+                        cumulativePercent = 0.95;
+                    }
+                }
+                
+                // 各ブロックの表示速度（1が遅く、5が速い）と、表示後の待ち時間をランダムに設定
+                steps.push({
+                    toPercent: cumulativePercent,
+                    speed: Math.random() * 4 + 1,
+                    pauseAfter: Math.floor(Math.random() * 2001) + 800 // 0.8秒～2.8秒
+                });
+
+                if (cumulativePercent >= 1.0) break;
+            }
+            return steps;
         }
 
-        // 画像の高さが取得できるのを待ってから、処理を開始
+        // ▼▼▼ ここまでが心臓部です ▼▼▼
+
+
+        const steps = generateRandomBlocks();
+        const intervalTime = 16; // アニメーションの滑らかさ
+
+        // 指定した高さまで、指定した速度でマスクを広げる関数
+        function animateTo(targetHeight, speed) {
+            const revealInterval = setInterval(() => {
+                let currentHeight = parseFloat(mask.style.height) || 0;
+                
+                if (currentHeight >= targetHeight) {
+                    clearInterval(revealInterval);
+                    mask.style.height = targetHeight + 'px'; // ぴったり合わせる
+                    
+                    // 次のステップへ進む準備
+                    setTimeout(() => {
+                        currentStepIndex++;
+                        runNextStep();
+                    }, steps[currentStepIndex -1].pauseAfter); // 実行済みのステップの待ち時間を参照
+                } else {
+                    mask.style.height = (currentHeight + speed) + 'px';
+                }
+            }, intervalTime);
+        }
+
+        // 次のステップを実行する関数
+        function runNextStep() {
+            if (currentStepIndex >= steps.length) return; // 全て完了
+
+            const step = steps[currentStepIndex];
+            const targetHeight = fullHeight * step.toPercent;
+            animateTo(targetHeight, step.speed);
+        }
+
+        // 画像の高さが取得できるのを待ってから、すべてを開始する
         const startupInterval = setInterval(() => {
             if (image.scrollHeight > 0) {
                 clearInterval(startupInterval);
                 fullHeight = image.scrollHeight;
-                // 最初のブロック表示を予約
-                setTimeout(showNextBlock, 1000); // 1秒後に開始
+                // 最初の表示をゆっくり開始
+                setTimeout(runNextStep, 1500);
             }
         }, 100);
     </script>
