@@ -15,17 +15,48 @@
             font-family: sans-serif;
             text-align: center;
         }
-        /* <embed>タグはPDFを表示するメインの要素 */
+
+        /* --- ここから追加 --- */
+        /* ローディング画面のスタイル */
+        #loading-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+        #progress-bar-container {
+            width: 80%;
+            max-width: 500px;
+            border: 1px solid #ccc;
+            margin-bottom: 20px;
+        }
+        #progress-bar {
+            width: 0%; /* 最初は0% */
+            height: 20px;
+            background-color: #f0f0f0;
+        }
+        #progress-label {
+            font-size: 1.2em;
+        }
+        /* --- ここまで追加 --- */
+
+        /* PDFコンテンツは最初は非表示 */
+        #pdf-content {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
         .pdf-viewer {
             width: 100%;
-            height: 90%; /* 画面の高さの90%を占める */
+            height: 90%;
         }
-        /* 埋め込み失敗時に表示する予備のリンク */
         .fallback {
-            padding: 20px;
+            padding: 10px;
         }
         .fallback a {
-            color: #8cdeff; /* 見やすいリンク色 */
+            color: #8cdeff;
             font-size: 1.2em;
             font-weight: bold;
         }
@@ -33,12 +64,49 @@
 </head>
 <body>
 
-    <embed class="pdf-viewer" src="gallery1_plan.pdf" type="application/pdf">
-
-    <div class="fallback">
-        <p>PDFがこのページに表示されない場合は、</p>
-        <a href="gallery1_plan.pdf" target="_blank">こちらをクリックして直接開いてください。</a>
+    <div id="loading-screen">
+        <div id="progress-bar-container">
+            <div id="progress-bar"></div>
+        </div>
+        <p id="progress-label">Loading Document...</p>
     </div>
+
+    <div id="pdf-content">
+        <embed class="pdf-viewer" src="gallery1_plan.pdf" type="application/pdf">
+        <div class="fallback">
+            <p>PDFが表示されない場合は、<a href="gallery1_plan.pdf" target="_blank">こちらをクリック</a></p>
+        </div>
+    </div>
+
+    <script>
+        const loadingScreen = document.getElementById('loading-screen');
+        const pdfContent = document.getElementById('pdf-content');
+        const bar = document.getElementById('progress-bar');
+        const label = document.getElementById('progress-label');
+        let width = 0;
+
+        // ▼ シミュレーションの時間調整 ▼
+        // この数値を大きくすると、ローディングがよりゆっくり進みます。(ミリ秒単位, 1000 = 1秒)
+        const loadingSpeed = 100;
+
+        const progressInterval = setInterval(() => {
+            width++;
+            bar.style.width = width + '%';
+            label.textContent = `Loading Document... ${width}%`;
+
+            // 100%になったら
+            if (width >= 100) {
+                clearInterval(progressInterval);
+                label.textContent = "Complete.";
+
+                // 1秒後にローディング画面を消してPDFを表示
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    pdfContent.style.display = 'block';
+                }, 1000);
+            }
+        }, loadingSpeed);
+    </script>
 
 </body>
 </html>
