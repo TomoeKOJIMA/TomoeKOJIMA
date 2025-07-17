@@ -72,14 +72,24 @@
 
   const steps = generateRandomBlocks();
   console.log('Generated steps:', steps);
-  const intervalTime = 16;
+
+  // intervalTimeを少し長くしてCPU負荷軽減
+  const intervalTime = 50;
 
   function animateTo(targetHeight, speed) {
     const step = steps[currentStepIndex];
     console.log(`animateTo: stepIndex=${currentStepIndex}, targetHeight=${targetHeight}, speed=${speed}`);
+    let lastLogTime = 0;
+
     const revealInterval = setInterval(() => {
+      let now = performance.now();
       let currentHeight = parseFloat(mask.style.height) || 0;
-      console.log(`Animating step ${currentStepIndex}: currentHeight=${currentHeight}`);
+
+      // ログ頻度を100msごとに制限
+      if (now - lastLogTime > 100) {
+        console.log(`Animating step ${currentStepIndex}: currentHeight=${currentHeight}`);
+        lastLogTime = now;
+      }
 
       if (currentHeight >= targetHeight) {
         clearInterval(revealInterval);
