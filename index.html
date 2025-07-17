@@ -79,6 +79,7 @@
     console.log(`animateTo: stepIndex=${currentStepIndex}, targetHeight=${targetHeight}, speed=${speed}`);
     const revealInterval = setInterval(() => {
       let currentHeight = parseFloat(mask.style.height) || 0;
+      console.log(`Animating step ${currentStepIndex}: currentHeight=${currentHeight}`);
 
       if (currentHeight >= targetHeight) {
         clearInterval(revealInterval);
@@ -93,7 +94,7 @@
       } else {
         let nextHeight = currentHeight + speed;
         if (nextHeight > targetHeight) nextHeight = targetHeight;
-        mask.style.height = nextHeight + 'px';
+        mask.style.height = `${nextHeight}px`;
       }
     }, intervalTime);
   }
@@ -121,6 +122,7 @@
   }
 
   const startupInterval = setInterval(() => {
+    console.log('Waiting for image height...');
     if (image.scrollHeight > 0) {
       clearInterval(startupInterval);
       fullHeight = image.scrollHeight;
