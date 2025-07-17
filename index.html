@@ -71,19 +71,23 @@
   }
 
   const steps = generateRandomBlocks();
+  console.log('Generated steps:', steps);
   const intervalTime = 16;
 
   function animateTo(targetHeight, speed) {
     const step = steps[currentStepIndex];
+    console.log(`animateTo: stepIndex=${currentStepIndex}, targetHeight=${targetHeight}, speed=${speed}`);
     const revealInterval = setInterval(() => {
       let currentHeight = parseFloat(mask.style.height) || 0;
 
       if (currentHeight >= targetHeight) {
         clearInterval(revealInterval);
         mask.style.height = targetHeight + 'px';
+        console.log(`step ${currentStepIndex} done, pausing ${step.pauseAfter}ms`);
 
         setTimeout(() => {
           currentStepIndex++;
+          console.log(`Moving to next step: ${currentStepIndex}`);
           runNextStep();
         }, step.pauseAfter);
       } else {
@@ -95,14 +99,20 @@
   }
 
   function runNextStep() {
-    if (currentStepIndex >= steps.length) return;
+    console.log(`runNextStep called with currentStepIndex=${currentStepIndex}`);
+    if (currentStepIndex >= steps.length) {
+      console.log('All steps finished.');
+      return;
+    }
 
     const step = steps[currentStepIndex];
     const targetHeight = fullHeight * step.toPercent;
+    console.log(`Next step targetHeight=${targetHeight}`);
 
     const currentHeight = parseFloat(mask.style.height) || 0;
     if (targetHeight <= currentHeight) {
       currentStepIndex++;
+      console.log('Target height <= current height, skipping to next step:', currentStepIndex);
       runNextStep();
       return;
     }
@@ -114,6 +124,7 @@
     if (image.scrollHeight > 0) {
       clearInterval(startupInterval);
       fullHeight = image.scrollHeight;
+      console.log('Image height:', fullHeight);
       setTimeout(runNextStep, 800);
     }
   }, 100);
