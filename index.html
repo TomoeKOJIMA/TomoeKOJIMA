@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>つくるについて考える</title>
+    <title>つくるについて考える（修正版）</title>
     <style>
         body, html {
             margin: 0;
@@ -32,7 +32,7 @@
 <body>
 
     <div id="image-mask">
-        <img id="reveal-image" src="gallery1_caption.png" alt="Loading Document...">
+        <img id="reveal-image" src="gallery1_plan.png" alt="Loading Document...">
     </div>
 
     <script>
@@ -41,18 +41,26 @@
         let fullHeight = 0;
         let currentStepIndex = 0;
 
+        /**
+         * アニメーションのステップを生成する関数（修正版）
+         * 進行度の計算方法を修正し、必ず全ステップが完了するように変更。
+         */
         function generateRandomBlocks() {
             const steps = [];
             let cumulativePercent = 0;
-            const blockCount = Math.floor(Math.random() * 16) + 15;
+            const blockCount = Math.floor(Math.random() * 16) + 15; // 15〜30ステップ
+
+            // ★修正点：ランダムな値の合計で正規化する方法に変更
+            const chunks = Array.from({ length: blockCount }, () => Math.random());
+            const totalChunkSize = chunks.reduce((sum, val) => sum + val, 0);
 
             for (let i = 0; i < blockCount; i++) {
-                let chunkSize = Math.random();
-
+                // 最後のステップは必ず100%にする
                 if (i === blockCount - 1) {
                     cumulativePercent = 1.0;
                 } else {
-                    cumulativePercent += chunkSize / blockCount;
+                    // 各ステップの進行度を全体の合計に対する割合で計算
+                    cumulativePercent += chunks[i] / totalChunkSize;
                     if (cumulativePercent > 0.98) {
                         cumulativePercent = 0.98;
                     }
@@ -60,13 +68,10 @@
 
                 steps.push({
                     toPercent: cumulativePercent,
-                    speed: Math.random() * 15 + 15, // 少し遅く戻す（15〜30px/frame）
+                    speed: Math.random() * 15 + 15,
                     pauseAfter: Math.floor(Math.random() * 2001) + 2000 // 2秒〜4秒
                 });
-
-                if (cumulativePercent >= 1.0) break;
             }
-
             return steps;
         }
 
@@ -78,18 +83,15 @@
             const revealInterval = setInterval(() => {
                 let currentHeight = parseFloat(mask.style.height) || 0;
 
-                // ★ 高さのオーバーラン防止
                 if (currentHeight >= targetHeight) {
                     clearInterval(revealInterval);
                     mask.style.height = targetHeight + 'px';
 
-                    // 次のステップへ（pauseAfterミス防止）
                     setTimeout(() => {
                         currentStepIndex++;
                         runNextStep();
                     }, step.pauseAfter);
                 } else {
-                    // ★ 毎回少しだけ伸ばす
                     let nextHeight = currentHeight + speed;
                     if (nextHeight > targetHeight) nextHeight = targetHeight;
                     mask.style.height = nextHeight + 'px';
@@ -102,9 +104,8 @@
 
             const step = steps[currentStepIndex];
             const targetHeight = fullHeight * step.toPercent;
-
-            // ★ 高さがすでに超えてる場合はスキップ
             const currentHeight = parseFloat(mask.style.height) || 0;
+
             if (targetHeight <= currentHeight) {
                 currentStepIndex++;
                 runNextStep();
@@ -118,7 +119,7 @@
             if (image.scrollHeight > 0) {
                 clearInterval(startupInterval);
                 fullHeight = image.scrollHeight;
-                setTimeout(runNextStep, 800); // 少しだけ待機
+                setTimeout(runNextStep, 800);
             }
         }, 100);
     </script>
